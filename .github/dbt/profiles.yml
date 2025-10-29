@@ -1,0 +1,10 @@
+jaffle_demo:
+  target: ci
+  outputs:
+    ci:
+      type: duckdb
+      # A local DB file the GitHub runner creates for each job
+      path: ci.duckdb
+      # We'll inject DBT_SCHEMA via env in the workflows for isolation
+      schema: "{{ env_var('DBT_SCHEMA', 'analytics') }}"
+      threads: 4

@@ -1,0 +1,31 @@
+version: 2
+sources:
+  - name: raw
+    tags: ['source', 'raw']
+    database: "{{ target.database }}"   # make it follow the active target (DuckDB file)
+    schema: "{{ target.schema }}"                      # MUST match where your seeds land
+    tables:
+      - name: raw_customers
+        tags: [''source', 'raw']
+        tests:
+          - dbt_expectations.expect_table_row_count_to_be_between:
+              arguments:
+                min_value: 100
+                max_value: 500
+
+      - name: raw_orders
+        tags: [''source', 'raw']
+        loaded_at_field: order_date
+        freshness:
+          warn_after:  {count: 30, period: day}
+          error_after: {count: 90, period: day}
+
+      - name: raw_payments
+        tags: [''source', 'raw']
+        columns:
+          - name: amount
+            tests:
+              - dbt_expectations.expect_column_values_to_be_between:
+                  arguments:
+                    min_value: 0
+                    max_value: 5000

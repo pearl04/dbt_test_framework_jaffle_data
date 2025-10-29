@@ -1,0 +1,62 @@
+version: 1
+models:
+  - name: stg_customers
+    columns: 
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+  - name: stg_orders
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        tests: 
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customers')
+                field: customer_id
+      - name : order_status
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['RETURNED','SHIPPED','COMPLETED','RETURN_PENDING','PLACED']
+                config:
+                  tags: ['generic','ci', 'critical'] 
+      - name: order_date
+        tests:
+          - not_null            
+  - name: stg_payments
+    columns:
+      - name: amount
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: true
+                config:
+                  tags: ['generic','ci', 'critical'] 
+      - name: payment_id
+        tests:
+          - not_null
+          - unique
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_orders')
+                field: order_id
+      - name: payment_method
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['COUPON','GIFT_CARD','CREDIT_CARD','BANK_TRANSFER'] 
+                config:
+                  tags: ['generic','ci', 'critical']     
+
+    

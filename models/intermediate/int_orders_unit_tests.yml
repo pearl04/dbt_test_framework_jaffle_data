@@ -1,0 +1,36 @@
+version: 2
+models:
+  - name: int_orders_enriched
+    unit_tests:
+      - name: int_orders_first_order_and_sequence
+        description: "Numbers orders per customer and flags the first one"
+        tags: ['unit','ci', 'critical']
+        given:
+          - input: ref('stg_orders')
+            rows:
+              # Customer 1: deliberately out of order
+              - { order_id: 101, customer_id: 1, order_date: "2024-01-10", order_status: "completed" }
+              - { order_id: 102, customer_id: 1, order_date: "2024-01-05", order_status: "completed" }
+              - { order_id: 103, customer_id: 1, order_date: "2024-02-01", order_status: "completed" }
+
+              # Customer 2: same-day tie -> use order_id to break ties deterministically
+              - { order_id: 201, customer_id: 2, order_date: "2024-03-01", order_status: "completed" }
+              - { order_id: 202, customer_id: 2, order_date: "2024-03-01", order_status: "completed" }
+          - input: ref('stg_customers')
+            rows:
+              - { customer_id: 1, first_name: "Alice" }
+              - { customer_id: 2, first_name: "Bob" }
+          - input: ref('stg_payments')
+            rows:
+              - { payment_id: 1, order_id: 101, amount: 50, payment_method: "CREDIT_CARD" }        
+
+        expect:
+          rows:
+            # Customer 1: chronological + tie-break by order_id
+            - { order_id: 102, customer_id: 1, order_sequence_per_customer: 1, is_first_order: true  }
+            - { order_id: 101, customer_id: 1, order_sequence_per_customer: 2, is_first_order: false }
+            - { order_id: 103, customer_id: 1, order_sequence_per_customer: 3, is_first_order: false }
+
+            # Customer 2: same day -> smaller order_id first
+            - { order_id: 201, customer_id: 2, order_sequence_per_customer: 1, is_first_order: true  }
+            - { order_id: 202, customer_id: 2, order_sequence_per_customer: 2, is_first_order: false }

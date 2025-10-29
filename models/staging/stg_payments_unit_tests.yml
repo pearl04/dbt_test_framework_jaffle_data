@@ -1,0 +1,33 @@
+version: 2
+
+unit_tests:
+  - name: stg_payments_payment_method_normaliser
+    description: "Normalises raw payment_method into {COUPON, GIFT_CARD, CREDIT_CARD, BANK_TRANSFER} else 'unknown'."
+    model: stg_payments
+
+    given:
+      - input: ref('raw_payments')
+        rows:
+          - { id: 1, order_id: 1001, amount: 50, payment_method: "Coupon" }
+          - { id: 2, order_id: 1002, amount: 40, payment_method: "coupon code" }
+          - { id: 3, order_id: 1003, amount: 20, payment_method: "Gift Card" }
+          - { id: 4, order_id: 1004, amount: 35, payment_method: "giftcard" }
+          - { id: 5, order_id: 1005, amount: 25, payment_method: "Credit Card" }
+          - { id: 6, order_id: 1006, amount: 15, payment_method: "credit" }
+          - { id: 7, order_id: 1007, amount: 45, payment_method: "Bank Transfer" }
+          - { id: 8, order_id: 1008, amount: 60, payment_method: "banktransfer" }
+          - { id: 9, order_id: 1009, amount: 55, payment_method: "UPI" }
+          - { id: 10, order_id: 1010, amount: 10, payment_method: null }
+
+    expect:
+      rows:
+        - { payment_id: 1, payment_method: "COUPON" }
+        - { payment_id: 2, payment_method: "COUPON" }
+        - { payment_id: 3, payment_method: "GIFT_CARD" }
+        - { payment_id: 4, payment_method: "GIFT_CARD" }
+        - { payment_id: 5, payment_method: "CREDIT_CARD" }
+        - { payment_id: 6, payment_method: "CREDIT_CARD" }
+        - { payment_id: 7, payment_method: "BANK_TRANSFER" }
+        - { payment_id: 8, payment_method: "BANK_TRANSFER" }
+        - { payment_id: 9, payment_method: "unknown" }
+        - { payment_id: 10, payment_method: "unknown" }

@@ -1,0 +1,7 @@
+# Community packages for extra tests
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.3.0
+
+  - package: calogica/dbt_expectations
+    version: 0.10.0

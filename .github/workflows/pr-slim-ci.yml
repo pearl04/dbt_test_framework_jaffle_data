@@ -1,0 +1,51 @@
+name: PR Slim CI (DuckDB, No Secrets)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-ci:
+    runs-on: ubuntu-latest
+    env:
+      # Per-PR isolated schema (appears inside your models as the 'schema')
+      DBT_SCHEMA: ci_pr${{ github.event.number }}
+      # Point dbt to the profile inside this repo (no ~/.dbt needed)
+      DBT_PROFILES_DIR: ./.github/dbt
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt for DuckDB
+        run: |
+          pip install -U pip wheel
+          pip install dbt-duckdb
+
+      - name: dbt deps + compile (fast sanity)
+        run: |
+          dbt deps --no-use-colors
+          dbt compile --no-use-colors
+
+      - name: Build a small slice (critical area)
+        run: |
+          # If you later add a state manifest under ./state/, switch to:
+          # dbt build --state state/ --select state:modified+ --no-use-colors
+          dbt build --select "+tag:critical" --no-use-colors
+
+      - name: Run critical tests only
+        run: |
+          dbt test --select tag:critical --no-use-colors
+
+      - name: PR summary
+        run: |
+          echo "### PR CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Schema: \`${DBT_SCHEMA}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Adapter: DuckDB (ephemeral file \`ci.duckdb\`)" >> $GITHUB_STEP_SUMMARY
+          echo "- Built: \`+tag:critical\` slice" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: \`tag:critical\`" >> $GITHUB_STEP_SUMMARY

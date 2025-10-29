@@ -1,0 +1,50 @@
+name: Main Docs & Artifacts (DuckDB, No Secrets)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    env:
+      DBT_SCHEMA: docs_main
+      DBT_PROFILES_DIR: ./.github/dbt
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt for DuckDB
+        run: |
+          pip install -U pip wheel
+          pip install dbt-duckdb
+
+      - name: dbt deps + compile + docs
+        run: |
+          dbt deps --no-use-colors
+          dbt compile --no-use-colors
+          dbt docs generate --no-use-colors
+
+      - name: Upload artifacts (manifest, catalog, run_results, docs site)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-artifacts
+          path: |
+            target/manifest.json
+            target/run_results.json
+            target/catalog.json
+            target/index.html
+            target/assets
+            target/*
+      - name: Run summary
+        run: |
+          echo "### Docs & Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifacts uploaded as **dbt-artifacts**" >> $GITHUB_STEP_SUMMARY
+          echo "- Open the run → Artifacts → download \`index.html\` to view lineage" >> $GITHUB_STEP_SUMMARY

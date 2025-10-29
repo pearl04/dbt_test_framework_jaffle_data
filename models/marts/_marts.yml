@@ -1,0 +1,70 @@
+version: 1
+models:
+  - name: dim_customers
+    tags: ['critical']
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: fct_orders
+    tags: ['critical']
+    tests:
+      - compare_order_amount:
+          arguments:
+            column_name: order_total_amount
+            compare_model: "{{ ref('int_orders_enriched') }}"
+            compare_column_name: total_amount
+            tolerance: 0
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_orders')
+                field: order_id
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customers')
+                field: customer_id
+      - name: order_date
+        tests:
+          - not_null
+      - name: order_total_amount
+        tests:
+          - not_null
+
+  - name: fct_payments
+    tags: ['critical']
+    tests:
+      - compare_order_amount:
+          arguments:
+            column_name: payment_amount
+            compare_model: "{{ ref('int_payments_clean') }}"
+            compare_column_name: payment_amount
+            tolerance: 0      
+    columns:
+      - name: payment_id
+        tests:
+          - not_null
+          - unique
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('int_orders_enriched')
+                field: order_id
+      - name: payment_amount
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: true
