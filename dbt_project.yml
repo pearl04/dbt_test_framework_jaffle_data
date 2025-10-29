@@ -25,8 +25,8 @@ clean-targets:         # directories to be removed by `dbt clean`
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 seeds:
-  +schema: raw
-  +tags: ['seeds']
+  jaffle_demo:
+    +tags: ['seeds']
 
 models:
   jaffle_demo:
